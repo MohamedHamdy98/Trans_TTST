@@ -10,7 +10,11 @@ import os
 
 try:
     import MeCab
+<<<<<<< HEAD
     # dicdir = "/usr/local/lib/python3.10/site-packages/unidic_lite/dicdir"
+=======
+   # dicdir = "/usr/local/lib/python3.10/site-packages/unidic_lite/dicdir"
+>>>>>>> 1f57304156f56a76c0732fbd70e465846b577d71
     
 except ImportError as e:
     raise ImportError("Japanese requires mecab-python3 and unidic-lite.") from e
@@ -357,10 +361,17 @@ def hira2kata(text: str) -> str:
 
 
 _SYMBOL_TOKENS = set(list("・、。？！"))
+<<<<<<< HEAD
 _NO_YOMI_TOKENS = set(list("「」『』―（）［］[]　…")) 
 # _TAGGER = MeCab.Tagger(f"-d {dicdir} -r {os.path.join(dicdir, 'mecabrc')}")
 _TAGGER= MeCab.Tagger()
 # -r /dev/null -d /usr/local/lib/mecab/dic/mydic
+=======
+_NO_YOMI_TOKENS = set(list("「」『』―（）［］[]　…"))
+#_TAGGER = MeCab.Tagger(f"-d {dicdir} -r {os.path.join(dicdir, 'mecabrc')}")
+_TAGGER= MeCab.Tagger()
+
+>>>>>>> 1f57304156f56a76c0732fbd70e465846b577d71
 
 def text2kata(text: str) -> str:
     parsed = _TAGGER.parse(text)
