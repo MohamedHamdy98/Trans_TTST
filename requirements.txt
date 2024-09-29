@@ -10,9 +10,8 @@ gunicorn
 fastapi
 
 # For TTS Module
-# Core deps
 cython>=0.29.30
-scipy>=1.10.1
+scipy==1.10.1
 soundfile>=0.12.0
 librosa>=0.10.0
 scikit-learn>=1.3.0
@@ -20,12 +19,12 @@ inflect>=5.6.0
 tqdm>=4.64.1
 anyascii>=0.3.0
 pyyaml>=6.0
-fsspec>=2023.6.0 # <= 2023.9.1 makes aux tests fail
+fsspec>=2023.6.0
 aiohttp>=3.8.1
 packaging>=23.1
 mutagen==1.47.0
 
-# Flask (used only once)
+# Flask
 flask>=2.0.1
 
 # For TTS inference
@@ -38,7 +37,7 @@ pandas>=1.4,<2.0
 # For training
 matplotlib>=3.7.0
 
-# Coqui stack (TTS trainer)
+# Coqui stack
 trainer>=0.0.36
 
 # Config management
@@ -59,18 +58,18 @@ bangla
 bnnumerizer
 bnunicodenormalizer
 
-# For tortoise TTS
+# Tortoise TTS
 einops>=0.6.0
 transformers>=4.33.0
 
-# For Bark TTS
+# Bark TTS
 encodec>=0.1.1
 
 # XTTS dependencies
 unidecode>=1.3.2
 num2words
 spacy[ja]>=3
-pydantic==1.10.13
+pydantic>=2.0.0  # Adjusted for DeepSpeed compatibility
 python-multipart==0.0.6
 typing-extensions>=4.8.0
 cutlet
@@ -79,4 +78,7 @@ unidic-lite==1.0.8
 unidic==1.1.0
 
 # Deepspeed (for distributed training)
-deepspeed
+deepspeed>=0.15.0
+
+# Additional dependency for unidic compatibility
+wasabi<1.0.0
