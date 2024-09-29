@@ -4,14 +4,14 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: dockerfile.gpu
     image: translation_docker_api:latest  
     volumes:
       - .:/app
       - $HOME/.cache/pip:/root/.cache/pip  # Mount the pip cache
     ports:
-      - "8000:8000"
+      - "5001:5001"
     environment:
       FLASK_APP: app.py
       FLASK_ENV: production
-    command: gunicorn --bind 0.0.0.0:8000 app:app
+    command: gunicorn --bind 0.0.0.0:5001 app:app
