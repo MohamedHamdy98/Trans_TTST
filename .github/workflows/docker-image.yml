@@ -26,7 +26,7 @@ jobs:
         run: echo "IMAGE_TAG=mohammedhamdy98/ttst-fastapi-docker:$(date +%s)" >> $GITHUB_ENV
       
       - name: Build the Docker image
-        run: docker build . --file dockerfile.gpu --tag ${{ env.IMAGE_TAG }} --build-arg PYTHON_VERSION=3.10
+        run: docker build . --file dockerfile.gpu --tag ${{ env.IMAGE_TAG }} --build-arg PYTHON_VERSION=3.10 --build-arg DEBIAN_FRONTEND=noninteractive
       
       - name: Push the Docker image
         run: docker push ${{ env.IMAGE_TAG }}
