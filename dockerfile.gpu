@@ -1,0 +1,37 @@
+# Use Nvidia CUDA GPU base image
+FROM nvidia/cuda:11.7.1-cudnn8-runtime-ubuntu20.04
+
+# Set environment variables for the container
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+
+# Install necessary system dependencies
+RUN apt-get update && apt-get install -y \
+    ffmpeg \
+    libsndfile1 \
+    curl \
+    unzip \
+    build-essential \
+    python3-pip \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+COPY requirements.txt .
+RUN pip3 install --upgrade pip && \
+    pip3 install -r requirements.txt
+
+# Copy the FastAPI application
+COPY . /app
+WORKDIR /app
+
+# Ensure CUDA is available for torch and torchaudio
+RUN python3 -c "import torch; assert torch.cuda.is_available(), 'CUDA not available'"
+
+# Expose the FastAPI port
+EXPOSE 5001
+
+# Command to run the FastAPI app with uvicorn
+CMD ["uvicorn", "app_fast:app", "--host", "0.0.0.0", "--port", "5001"]
