@@ -21,12 +21,15 @@ RUN apt-get update && apt-get install -y \
     python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Python dependencies
-COPY requirements.txt .
-RUN pip3 install --upgrade pip && \
-    pip3 install -r requirements.txt
+# Copy the requirements file first to leverage Docker cache
+COPY requirements.txt /app/requirements.txt
 
-# Copy the FastAPI application
+# Install Python dependencies and clean up cache to save space
+RUN pip3 install --upgrade pip && \
+    pip3 install -r /app/requirements.txt && \
+    rm -rf /root/.cache/pip
+
+# Copy the FastAPI application files
 COPY . /app
 WORKDIR /app
 
