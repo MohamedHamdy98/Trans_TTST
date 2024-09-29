@@ -40,10 +40,10 @@ app.add_middleware(
 recognizer = Recognizer()
 
 # Directory for storing audio files
-AUDIO_STORAGE_DIR = '/tmp/translated/'
-Final_OUTPUT_AUIDO = "/tmp/translated/output_translated.wav"
-os.makedirs(AUDIO_STORAGE_DIR, exist_ok=True)
-os.makedirs(Final_OUTPUT_AUIDO, exist_ok=True)
+
+FINAL_OUTPUT_AUIDO = "/translation/audio_outputs/output_translated.wav"
+
+os.makedirs(FINAL_OUTPUT_AUIDO, exist_ok=True)
 
 # Download and set up ffmpeg binary
 zip_file_path = download_file("https://huggingface.co/spaces/coqui/xtts/resolve/main/ffmpeg.zip", "./ffmpeg.zip")
@@ -129,7 +129,7 @@ def predict(prompt, language, audio_file_pth=None, mic_file_path=None, use_mic=F
         return None
 
     if voice_cleanup:
-        out_filename = "/tmp/translated/voice_cleanup/output_translated.wav"
+        out_filename = "/translation/voice_cleanup/output_translated.wav"
         shell_command = f"ffmpeg -y -i {speaker_wav} -af lowpass=8000,highpass=75,areverse,silenceremove=start_periods=1:start_silence=0:start_threshold=0.02,areverse,silenceremove=start_periods=1:start_silence=0:start_threshold=0.02 {out_filename}"
         subprocess.run(shell_command, shell=True, capture_output=False, text=True, check=True)
         speaker_wav = out_filename
@@ -147,7 +147,7 @@ def predict(prompt, language, audio_file_pth=None, mic_file_path=None, use_mic=F
             if out is None or "wav" not in out or out["wav"] is None:
                 print("No audio data returned.")
                 continue
-            output_path = f"/tmp/translated/bf_merged/output_{uuid.uuid4()}.wav"
+            output_path = f"/translation/bf_merged/output_{uuid.uuid4()}.wav"
             torchaudio.save(output_path, torch.tensor(out["wav"]).unsqueeze(0), 24000)
             all_outputs.append(output_path)
         except RuntimeError as e:
@@ -158,7 +158,7 @@ def predict(prompt, language, audio_file_pth=None, mic_file_path=None, use_mic=F
         audio = AudioSegment.from_wav(audio_file)
         combined += audio
 
-    output_combined_path = Final_OUTPUT_AUIDO
+    output_combined_path = FINAL_OUTPUT_AUIDO
     combined.export(output_combined_path, format="wav")
     return output_combined_path
 
@@ -188,11 +188,11 @@ async def translate(request: TranslationRequest):
     if not audio_file:
         raise HTTPException(status_code=500, detail="Unable to generate speech.")
 
-    return FileResponse(audio_file, media_type="audio/wav", filename="output.wav")
+    return FileResponse(audio_file, media_type="audio/wav", filename="audio_output.wav")
 
 @app.get("/get_path_translated")
 async def get_path_translated():
-    output_path = "/tmp/translated/output_translated.wav"
+    output_path = "/translation/audio_outputs/output_translated.wav"
     if os.path.exists(output_path):
         return {"status": "success", "output_path": output_path}
     else:
@@ -200,7 +200,7 @@ async def get_path_translated():
 
 @app.get("/")
 async def index():
-    return {"message": "Welcome to the FastAPI!"}
+    return {"message": "Running 😀!"}
 
 if __name__ == "__main__":
     import uvicorn
