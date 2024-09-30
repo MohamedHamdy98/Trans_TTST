@@ -22,14 +22,22 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Check Disk Space
+        run: df -h
+
+      - name: Clean up Docker
+        run: docker system prune -af
+
       - name: Set up Docker image tag
         run: echo "IMAGE_TAG=mohammedhamdy98/ttst-fastapi-docker:$(date +%s)" >> $GITHUB_ENV
 
-      - name: List files to ensure Dockerfile exists
-        run: ls -la
-
-      - name: Check available disk space
-        run: df -h  # Check disk space before building the image
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: /tmp/pip-cache
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Build the Docker image
         run: |
