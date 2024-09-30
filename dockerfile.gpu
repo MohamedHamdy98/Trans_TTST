@@ -32,18 +32,21 @@ ENV PYTHONUNBUFFERED=1
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     libsndfile1 \
-    curl \
-    unzip \
+    python3-pip \
+    python3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy installed packages from build stage
-COPY --from=build /usr/local/lib/python3.8/dist-packages/ /usr/local/lib/python3.8/dist-packages/
+# Install Python dependencies again to ensure they are available in the final stage
+COPY --from=build /app/requirements.txt /app/requirements.txt
+RUN pip3 install --upgrade pip && \
+    pip3 install --no-cache-dir -r /app/requirements.txt && \
+    rm -rf /root/.cache/pip
 
 # Copy the FastAPI application files
 COPY . /app
 WORKDIR /app
 
-# Ensure CUDA is available for torch and torchaudio
+# Ensure Python is installed and CUDA is available for torch and torchaudio
 RUN python3 -c "import torch; assert torch.cuda.is_available(), 'CUDA not available'"
 
 # Expose the FastAPI port
