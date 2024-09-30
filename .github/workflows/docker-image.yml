@@ -38,4 +38,4 @@ jobs:
             --build-arg PIP_NO_CACHE_DIR=1 \  # Disable pip caching to save space
             --cache-from=type=registry,ref=mohammedhamdy98/ttst-fastapi-docker:cache \
             --cache-to=type=registry,ref=mohammedhamdy98/ttst-fastapi-docker:cache,mode=max \
-            --push dockerfiles/.  # Ensure build context is correct (current directory)
+            --push .  # Ensure build context is correct (current directory)
