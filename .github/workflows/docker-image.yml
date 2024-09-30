@@ -28,6 +28,9 @@ jobs:
       - name: List files to ensure Dockerfile exists
         run: ls -la
 
+      - name: Check available disk space
+        run: df -h  # Check disk space before building the image
+
       - name: Build the Docker image
         run: |
           docker buildx build \
