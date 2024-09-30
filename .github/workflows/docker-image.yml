@@ -31,11 +31,11 @@ jobs:
       - name: Build the Docker image
         run: |
           docker buildx build \
-            --file dockerfile.gpu \  # Ensure the correct path to the Dockerfile
-            --tag ${{ env.IMAGE_TAG }} \
-            --build-arg PYTHON_VERSION=3.10 \
-            --build-arg DEBIAN_FRONTEND=noninteractive \
-            --build-arg PIP_NO_CACHE_DIR=1 \  # Disable pip caching to save space
-            --cache-from=type=registry,ref=mohammedhamdy98/ttst-fastapi-docker:cache \
-            --cache-to=type=registry,ref=mohammedhamdy98/ttst-fastapi-docker:cache,mode=max \
-            --push .  # Ensure build context is correct (current directory)
+          --file dockerfile.gpu \
+          --tag mohammedhamdy98/ttst-fastapi-docker:$(date +%s) \
+          --build-arg PYTHON_VERSION=3.10 \
+          --build-arg DEBIAN_FRONTEND=noninteractive \
+          --build-arg PIP_NO_CACHE_DIR=1 \
+          --cache-from=type=registry,ref=mohammedhamdy98/ttst-fastapi-docker:cache \
+          --cache-to=type=registry,ref=mohammedhamdy98/ttst-fastapi-docker:cache,mode=max \
+          --push .  # This is the context path, ensuring Docker looks in the current directory for the Dockerfile
