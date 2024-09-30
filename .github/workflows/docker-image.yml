@@ -36,7 +36,7 @@ jobs:
       - name: Set up Docker image tag
         run: echo "IMAGE_TAG=mohammedhamdy98/ttst-fastapi-docker:$(date +%s)" >> $GITHUB_ENV
       
-      # Build the Docker image with --push and caching
+      # Build the Docker image with --no-cache-dir to reduce space usage
       - name: Build the Docker image
         run: |
           docker buildx build \
@@ -44,6 +44,7 @@ jobs:
             --tag ${{ env.IMAGE_TAG }} \
             --build-arg PYTHON_VERSION=3.10 \
             --build-arg DEBIAN_FRONTEND=noninteractive \
+            --build-arg PIP_NO_CACHE_DIR=1 \  # Disable pip caching to save space
             --cache-from=type=registry,ref=mohammedhamdy98/ttst-fastapi-docker:cache \
             --cache-to=type=registry,ref=mohammedhamdy98/ttst-fastapi-docker:cache,mode=max \
             --push .
