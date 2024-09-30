@@ -11,7 +11,7 @@ ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
 # Install necessary system dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     libsndfile1 \
     curl \
@@ -19,22 +19,21 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     python3-pip \
     python3-dev \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Copy the requirements file first to leverage Docker cache
 COPY requirements.txt /app/requirements.txt
 
 # Install Python dependencies and clean up cache to save space
 RUN pip3 install --upgrade pip && \
-    pip3 install -r /app/requirements.txt && \
-    rm -rf /root/.cache/pip
+    pip3 install --no-cache-dir -r /app/requirements.txt
 
 # Copy the FastAPI application files
 COPY . /app
 WORKDIR /app
 
-# Ensure CUDA is available for torch and torchaudio
-RUN python3 -c "import torch; assert torch.cuda.is_available(), 'CUDA not available'"
+# Check if CUDA is available and handle any errors
+RUN python3 -c "import torch; assert torch.cuda.is_available(), 'CUDA is not available. Check driver and hardware setup.'"
 
 # Expose the FastAPI port
 EXPOSE 5001
