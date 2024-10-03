@@ -33,7 +33,7 @@ cython>=0.29.30
 # For TTS Module
 # Core deps
 cython>=0.29.30
->>>>>>> parent of ed81317 (Update requirements.txt)
+
 scipy>=1.10.1
 soundfile>=0.12.0
 librosa>=0.10.0
