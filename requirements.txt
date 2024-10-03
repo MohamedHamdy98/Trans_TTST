@@ -8,6 +8,9 @@ SpeechRecognition
 langid
 gunicorn
 fastapi
+numpy==1.24.3  
+blis==0.7.9  
+
 
 # For TTS Module
 cython>=0.29.30
