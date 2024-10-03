@@ -25,11 +25,11 @@ packaging==23.1
 mutagen==1.47.0
 
 # Dependencies for examples
-=======
+
 # For TTS Module
 # Core deps
 cython>=0.29.30
-=======
+
 # For TTS Module
 # Core deps
 cython>=0.29.30
@@ -120,7 +120,7 @@ unidic==1.1.0
 
 # DeepSpeed for model acceleration
 deepspeed==0.10.3
-=======
+
 # Deepspeed (for distributed training)
 deepspeed
 
