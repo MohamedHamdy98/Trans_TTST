@@ -71,6 +71,9 @@ COPY --from=build /usr/local/bin /usr/local/bin
 COPY . /app
 WORKDIR /app
 
+# Ensure Python is installed and CUDA is available for torch and torchaudio
+RUN python3 -c "import torch; assert torch.cuda.is_available(), 'CUDA not available'"
+
 # Expose the FastAPI port
 EXPOSE 5001
 
