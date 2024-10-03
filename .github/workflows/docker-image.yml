@@ -48,4 +48,4 @@ jobs:
           --build-arg PYTHON_VERSION=3.10 \
           --build-arg DEBIAN_FRONTEND=noninteractive \
           --build-arg PIP_NO_CACHE_DIR=1 \
-          --push .
+          --push . 
