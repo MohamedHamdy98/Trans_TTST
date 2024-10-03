@@ -47,6 +47,4 @@ jobs:
           --build-arg PYTHON_VERSION=3.10 \
           --build-arg DEBIAN_FRONTEND=noninteractive \
           --build-arg PIP_NO_CACHE_DIR=1 \
-          --cache-from=type=registry,ref=mohammedhamdy98/ttst-fastapi-docker:cache \
-          --cache-to=type=registry,ref=mohammedhamdy98/ttst-fastapi-docker:cache,mode=max \
-          --push .  # This is the context path, ensuring Docker looks in the current directory for the Dockerfile
+          --push .
