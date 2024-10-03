@@ -8,7 +8,7 @@ SpeechRecognition
 langid
 gunicorn
 fastapi
-numpy==1.24.4  
+numpy>=1.24.3 
 blis==0.7.9  
 
 
