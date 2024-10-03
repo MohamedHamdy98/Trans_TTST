@@ -13,7 +13,7 @@ import langid
 from deep_translator import GoogleTranslator
 from speech_recognition import Recognizer, AudioFile
 from pathlib import Path
-from fastapi import FastAPI, File, UploadFile, HTTPException, Request
+from fastapi import FastAPI, File, UploadFile, HTTPException, Request, Form, Body, Depends
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from TTS.api import TTS
@@ -53,7 +53,6 @@ if not binary_name.is_file():
         zip_ref.extractall()
     st = os.stat(binary_name)
     os.chmod(binary_name, st.st_mode | stat.S_IEXEC)
-
 
 # Download and load Coqui XTTS V2 model
 model_name = "tts_models/multilingual/multi-dataset/xtts_v2"
@@ -164,35 +163,23 @@ def predict(prompt, language, audio_file_pth=None, mic_file_path=None, use_mic=F
     return output_combined_path
 
 @app.post("/translate")
-async def translate(
-    request: TranslationRequest = Body(None),
-    prompt: str = Form(None),
-    language: str = Form(None),
-    trans_lang: str = Form(None),
-    audio_file_pth: UploadFile = File(None),
-    mic_file_path: UploadFile = File(None),
-    use_mic: bool = Form(False),
-    voice_cleanup: bool = Form(False),
-    no_lang_auto_detect: bool = Form(False),
-    json_file: UploadFile = File(None)
-):
-    # Check if a JSON file is provided
-    if json_file:
-        json_file_path = Path(f"/tmp/{json_file.filename}")
-        with open(json_file_path, "wb") as buffer:
-            buffer.write(await json_file.read())
-        request = from_json_file(json_file_path)
-
-    # Determine the source of data
-    if request:
-        prompt = request.prompt
-        language = request.language
-        trans_lang = request.trans_lang
-        audio_file_pth = request.audio_file_pth
-        mic_file_path = request.mic_file_path
-        use_mic = request.use_mic
-        voice_cleanup = request.voice_cleanup
-        no_lang_auto_detect = request.no_lang_auto_detect
+async def translate(request: Request, audio_file_pth: UploadFile = File(None), mic_file_path: UploadFile = File(None)):
+    # Determine if the request is JSON or form data
+    if request.headers.get("content-type") == "application/json":
+        data = await request.json()
+        prompt = data.get("prompt")
+        language = data.get("language")
+        trans_lang = data.get("trans_lang")
+        use_mic = data.get("use_mic", False)
+        voice_cleanup = data.get("voice_cleanup", False)
+        no_lang_auto_detect = data.get("no_lang_auto_detect", False)
+    else:
+        prompt = await request.form()
+        language = prompt.get("language")
+        trans_lang = prompt.get("trans_lang")
+        use_mic = prompt.get("use_mic", False)
+        voice_cleanup = prompt.get("voice_cleanup", False)
+        no_lang_auto_detect = prompt.get("no_lang_auto_detect", False)
 
     if not prompt or not language or not trans_lang:
         raise HTTPException(status_code=400, detail="Missing required parameters.")
