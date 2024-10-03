@@ -8,10 +8,11 @@ import torchaudio
 from zipfile import ZipFile
 from pydub import AudioSegment
 import re
+import json
 import langid
 from deep_translator import GoogleTranslator
 from speech_recognition import Recognizer, AudioFile
-
+from pathlib import Path
 from fastapi import FastAPI, File, UploadFile, HTTPException, Request
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -41,23 +42,23 @@ recognizer = Recognizer()
 
 # Directory for storing audio files
 
-FINAL_OUTPUT_AUIDO = "/translation/audio_outputs/output_translated.wav"
-
-os.makedirs(FINAL_OUTPUT_AUIDO, exist_ok=True)
+FINAL_OUTPUT_AUIDO = Path("/translation/audio_outputs/output_translated.wav")
+FINAL_OUTPUT_AUDIO.parent.mkdir(parents=True, exist_ok=True)
 
 # Download and set up ffmpeg binary
 zip_file_path = download_file("https://huggingface.co/spaces/coqui/xtts/resolve/main/ffmpeg.zip", "./ffmpeg.zip")
-binary_name = "ffmpeg"
-if not os.path.isfile(binary_name):
+binary_name = Path("ffmpeg")
+if not binary_name.is_file():
     with ZipFile(zip_file_path, 'r') as zip_ref:
         zip_ref.extractall()
     st = os.stat(binary_name)
     os.chmod(binary_name, st.st_mode | stat.S_IEXEC)
 
+
 # Download and load Coqui XTTS V2 model
 model_name = "tts_models/multilingual/multi-dataset/xtts_v2"
 ModelManager().download_model(model_name)
-model_path = os.path.join(get_user_data_dir("tts"), model_name.replace("/", "--"))
+model_path = Path(get_user_data_dir("tts")) / model_name.replace("/", "--")
 
 config = XttsConfig()
 config.load_json(os.path.join(model_path, "config.json"))
@@ -65,8 +66,8 @@ config.load_json(os.path.join(model_path, "config.json"))
 model = Xtts.init_from_config(config)
 model.load_checkpoint(
     config,
-    checkpoint_path=os.path.join(model_path, "model.pth"),
-    vocab_path=os.path.join(model_path, "vocab.json"),
+    checkpoint_path=model_path / "model.pth",
+    vocab_path=model_path / "vocab.json",
     eval=True,
     use_deepspeed=True,
 )
@@ -86,8 +87,8 @@ class TranslationRequest(BaseModel):
     prompt: str
     language: str
     trans_lang: str
-    audio_file_pth: str = None
-    mic_file_path: str = None
+    audio_file_pth: Path = None
+    mic_file_path: Path = None
     use_mic: bool = False
     voice_cleanup: bool = False
     no_lang_auto_detect: bool = False
@@ -129,7 +130,7 @@ def predict(prompt, language, audio_file_pth=None, mic_file_path=None, use_mic=F
         return None
 
     if voice_cleanup:
-        out_filename = "/translation/voice_cleanup/output_translated.wav"
+        out_filename = Path("/translation/voice_cleanup/output_translated.wav")
         shell_command = f"ffmpeg -y -i {speaker_wav} -af lowpass=8000,highpass=75,areverse,silenceremove=start_periods=1:start_silence=0:start_threshold=0.02,areverse,silenceremove=start_periods=1:start_silence=0:start_threshold=0.02 {out_filename}"
         subprocess.run(shell_command, shell=True, capture_output=False, text=True, check=True)
         speaker_wav = out_filename
@@ -147,7 +148,7 @@ def predict(prompt, language, audio_file_pth=None, mic_file_path=None, use_mic=F
             if out is None or "wav" not in out or out["wav"] is None:
                 print("No audio data returned.")
                 continue
-            output_path = f"/translation/bf_merged/output_{uuid.uuid4()}.wav"
+            output_path = Path(f"/translation/bf_merged/output_{uuid.uuid4()}.wav")
             torchaudio.save(output_path, torch.tensor(out["wav"]).unsqueeze(0), 24000)
             all_outputs.append(output_path)
         except RuntimeError as e:
@@ -163,40 +164,66 @@ def predict(prompt, language, audio_file_pth=None, mic_file_path=None, use_mic=F
     return output_combined_path
 
 @app.post("/translate")
-async def translate(request: TranslationRequest):
-    prompt = request.prompt
-    language = request.language
-    trans_lang = request.trans_lang
-    audio_file_pth = request.audio_file_pth
-    mic_file_path = request.mic_file_path
-    use_mic = request.use_mic
-    voice_cleanup = request.voice_cleanup
-    no_lang_auto_detect = request.no_lang_auto_detect
+async def translate(
+    request: TranslationRequest = Body(None),
+    prompt: str = Form(None),
+    language: str = Form(None),
+    trans_lang: str = Form(None),
+    audio_file_pth: UploadFile = File(None),
+    mic_file_path: UploadFile = File(None),
+    use_mic: bool = Form(False),
+    voice_cleanup: bool = Form(False),
+    no_lang_auto_detect: bool = Form(False),
+    json_file: UploadFile = File(None)
+):
+    # Check if a JSON file is provided
+    if json_file:
+        json_file_path = Path(f"/tmp/{json_file.filename}")
+        with open(json_file_path, "wb") as buffer:
+            buffer.write(await json_file.read())
+        request = from_json_file(json_file_path)
+
+    # Determine the source of data
+    if request:
+        prompt = request.prompt
+        language = request.language
+        trans_lang = request.trans_lang
+        audio_file_pth = request.audio_file_pth
+        mic_file_path = request.mic_file_path
+        use_mic = request.use_mic
+        voice_cleanup = request.voice_cleanup
+        no_lang_auto_detect = request.no_lang_auto_detect
 
     if not prompt or not language or not trans_lang:
         raise HTTPException(status_code=400, detail="Missing required parameters.")
 
-    if not use_mic and not audio_file_pth:
+    if not use_mic and audio_file_pth is None:
         raise HTTPException(status_code=400, detail="Audio file path is required when not using a microphone.")
+
+    # Handle file upload if provided
+    if audio_file_pth:
+        audio_file_pth = Path(f"/tmp/{audio_file_pth.filename}")
+        with open(audio_file_pth, "wb") as buffer:
+            buffer.write(await audio_file_pth.read())
 
     transcribed_text = transcribe_audio(audio_file_pth or mic_file_path, language, no_lang_auto_detect) if not prompt else prompt
     translated_text = translate_text(transcribed_text, language, trans_lang, no_lang_auto_detect)
-    if not translated_text:
-        raise HTTPException(status_code=400, detail="Unable to translate text.")
 
-    audio_file = predict(translated_text, trans_lang, audio_file_pth, mic_file_path, use_mic, voice_cleanup, no_lang_auto_detect)
-    if not audio_file:
-        raise HTTPException(status_code=500, detail="Unable to generate speech.")
+    if translated_text is None:
+        return JSONResponse(content={"error": "Translation failed."})
 
-    return FileResponse(audio_file, media_type="audio/wav", filename="audio_output.wav")
+    output_audio_path = predict(translated_text, trans_lang, audio_file_pth, mic_file_path, use_mic, voice_cleanup, no_lang_auto_detect)
+    if output_audio_path is None:
+        return JSONResponse(content={"error": "Audio generation failed."})
+
+    return JSONResponse(content={"file_path": str(output_audio_path)})
 
 @app.get("/get_path_translated")
 async def get_path_translated():
-    output_path = "/translation/audio_outputs/output_translated.wav"
-    if os.path.exists(output_path):
-        return {"status": "success", "output_path": output_path}
-    else:
-        raise HTTPException(status_code=404, detail="Output file not found.")
+    output_path = FINAL_OUTPUT_AUDIO
+    if output_path.is_file():
+        return JSONResponse(content={"file_path": str(output_path)})
+    raise HTTPException(status_code=404, detail="File not found.")
 
 @app.get("/")
 async def index():
