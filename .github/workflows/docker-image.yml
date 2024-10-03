@@ -12,17 +12,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-
-      # Free up disk space before building
-      - name: Free Disk Space (Ubuntu)
-        uses: jlumbroso/free-disk-space@main
-        with:
-          tool-cache: true
-          android: true
-          dotnet: true
-          haskell: true
-          large-packages: true
-          swap-storage: true
       
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
@@ -33,19 +22,31 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Check Disk Space
+        run: df -h
+
+      - name: Clean up Docker
+        run: docker system prune -af
+
       - name: Set up Docker image tag
         run: echo "IMAGE_TAG=mohammedhamdy98/ttst-fastapi-docker:$(date +%s)" >> $GITHUB_ENV
 
-      - name: List files to ensure Dockerfile exists
-        run: ls -la
+      - name: Cache pip
+        uses: actions/cache@v3
+        with:
+          path: /tmp/pip-cache
+          key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-
 
       - name: Build the Docker image
         run: |
           docker buildx build \
-          --no-cache \
           --file dockerfile.gpu \
           --tag mohammedhamdy98/ttst-fastapi-docker:$(date +%s) \
           --build-arg PYTHON_VERSION=3.10 \
           --build-arg DEBIAN_FRONTEND=noninteractive \
           --build-arg PIP_NO_CACHE_DIR=1 \
-          --push .
+          --cache-from=type=registry,ref=mohammedhamdy98/ttst-fastapi-docker:cache \
+          --cache-to=type=registry,ref=mohammedhamdy98/ttst-fastapi-docker:cache,mode=max \
+          --push .  # This is the context path, ensuring Docker looks in the current directory for the Dockerfile
