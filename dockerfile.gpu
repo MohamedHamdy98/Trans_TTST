@@ -1,9 +1,16 @@
-# Stage 1: Build stage
+# Stage 1: Build stage with all dependencies
 FROM nvidia/cuda:11.7.1-cudnn8-runtime-ubuntu20.04 as build
 
-# Install necessary system dependencies
+# Set environment variables for the build process
+ENV LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+# Install necessary build dependencies and Python 3.10
 RUN apt-get update && apt-get install -y \
     build-essential \
+    curl \
     python3.10 \
     python3.10-dev \
     python3.10-distutils \
@@ -20,26 +27,24 @@ COPY requirements.txt /app/requirements.txt
 
 # Install Python dependencies
 RUN pip install --no-cache-dir -r /app/requirements.txt && \
+    pip check && \
     rm -rf /root/.cache/pip
 
-# Stage 2: Final stage
+# Stage 2: Final stage with runtime dependencies only
 FROM nvidia/cuda:11.7.1-cudnn8-runtime-ubuntu20.04
 
-# Set noninteractive mode for tzdata
-ENV DEBIAN_FRONTEND=noninteractive
+# Set environment variables
+ENV LANG=C.UTF-8 \
+    LC_ALL=C.UTF-8 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    DEBIAN_FRONTEND=noninteractive
 
-# Set environment variables for the container
-ENV LANG=C.UTF-8
-ENV LC_ALL=C.UTF-8
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-
-# Install necessary system dependencies
+# Install necessary runtime dependencies
 RUN apt-get update && apt-get install -y \
     ffmpeg \
     libsndfile1 \
     python3.10 \
-    python3.10-dev \
     python3.10-distutils \
     && rm -rf /var/lib/apt/lists/*
 
@@ -49,10 +54,9 @@ RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 1
 # Upgrade pip for Python 3.10
 RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3
 
-# Install Python dependencies again to ensure they are available in the final stage
-COPY --from=build /app/requirements.txt /app/requirements.txt
-RUN pip install --no-cache-dir -r /app/requirements.txt && \
-    rm -rf /root/.cache/pip
+# Copy the installed dependencies from the build stage
+COPY --from=build /usr/local/lib/python3.10 /usr/local/lib/python3.10
+COPY --from=build /usr/local/bin /usr/local/bin
 
 # Copy the FastAPI application files
 COPY . /app
@@ -60,6 +64,9 @@ WORKDIR /app
 
 # Expose the FastAPI port
 EXPOSE 5001
+
+# Healthcheck to ensure the app is running
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD curl --fail http://localhost:5001/ || exit 1
 
 # Command to run the FastAPI app with uvicorn
 CMD ["uvicorn", "app_fast:app", "--host", "0.0.0.0", "--port", "5001"]
