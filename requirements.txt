@@ -1,10 +1,9 @@
-Flask
 torch
 torchaudio
 pydub
 flask_cors
 deep_translator
-SpeechRecognition 
+SpeechRecognition  
 langid
 gunicorn
 fastapi
