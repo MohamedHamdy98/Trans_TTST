@@ -32,7 +32,7 @@ RUN curl -sS https://bootstrap.pypa.io/get-pip.py | python3
 COPY requirements.txt /app/requirements.txt
 
 # Install Python dependencies
-pip install --no-cache-dir -r /app/requirements.txt && \
+RUN pip install --no-cache-dir -r /app/requirements.txt && \
     pip check && \
     rm -rf /root/.cache/pip
 
