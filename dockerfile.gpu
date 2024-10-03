@@ -20,6 +20,9 @@ RUN apt-get install -y \
     python3.10 \
     python3.10-dev \
     python3.10-distutils \
+    pkg-config \
+    libcairo2-dev \
+    libglib2.0-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Ensure python3 points to python3.10
@@ -55,6 +58,9 @@ RUN apt-get update && apt-get install -y \
     libsndfile1 \
     python3.10 \
     python3.10-distutils \
+    pkg-config \
+    libcairo2-dev \
+    libglib2.0-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Ensure python3 points to python3.10
